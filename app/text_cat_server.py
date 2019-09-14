@@ -5,8 +5,8 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 
-from . import training_routines
-from . import prediction_routines
+import training_routines
+import prediction_routines
 
 app = Flask(__name__)
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1'
@@ -62,7 +62,7 @@ def train_model():
     except Exception as e:
         return jsonify({'error': f"{e}"}), 500
 
-    training_routines.train(train_request)
+    training_routines.train(app, train_request)
 
     return jsonify(response)
 

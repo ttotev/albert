@@ -1,7 +1,7 @@
 import random
 import time
 
-def train(train_request):
+def train(app, train_request):
 	""" ASYNC invoked Mock Function
 	In place of the actual routines required
 	for training the text categorization model.
@@ -22,8 +22,12 @@ def train(train_request):
 	"""
 	# Simulate long running function
 	sec = random.randrange(30, 90)
-	print(f'Sleeping {sec} secs')
-	time.sleep(sec)
+	print("Slow running training function")
+	if app.testing != True:
+		print(f'Sleeping {sec} secs')
+		time.sleep(sec)
+	else:
+		print('Test mode - fast run')
 
 if __name__ == "__main__":
     train({})
