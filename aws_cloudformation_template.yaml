@@ -1,0 +1,19 @@
+Resources:
+  AlbertTextCat:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      BillingMode: PROVISIONED
+      AttributeDefinitions:
+        - AttributeName: key
+          AttributeType: S
+        - AttributeName: sort
+          AttributeType: S
+      KeySchema:
+        - AttributeName: key
+          KeyType: HASH
+        - AttributeName: sort
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: albert_text_cat
