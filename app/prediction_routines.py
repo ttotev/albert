@@ -25,5 +25,4 @@ def predict(model, prediction_request):
     return ordoptions[:prediction_request['n_top']]
 
 if __name__ == "__main__":
-    p = predict()
-    print(p)
+    pass

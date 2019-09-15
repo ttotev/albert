@@ -20,6 +20,8 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
+# Initialize AWS DynamoDB connection
+# If needed, update region and endpoint to reflect the actual
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1'
             , endpoint_url="http://dynamodb.us-east-1.amazonaws.com")
 
@@ -29,6 +31,7 @@ table = dynamodb.Table('albert_text_cat')
 def training_task(train_request):
     training_routines.train(app, table, train_request)
 
+# Train a new model
 @app.route('/models', methods=['POST'])
 def train_model():
     if not (request.json
@@ -52,42 +55,29 @@ def train_model():
     #     nlp = spacy.blank("en")  # create blank Language class
     
     try:
-        if force_update != 'True':
-            response = table.put_item(
-                Item={
-                    'key': 'model'
-                    , 'sort': train_request["id"]
-                    , 'data': json.dumps(train_request)
-                    , 'status': 'started'
-                }
-                , ConditionExpression=Attr("key").not_exists() & Attr("sort").not_exists() 
+        if force_update != 'True':  # Train only new models if not forced
+            response = table.query(
+                KeyConditionExpression=Key('key').eq('model') & Key('sort').eq(train_request['id'])
             )
-        else:
-            response = table.put_item(
-                Item={
-                    'key': 'model'
-                    , 'sort': train_request["id"]
-                    , 'data': json.dumps(train_request)
-                    , 'status': 'started'
-                }
-                , ReturnValues='ALL_OLD'
-            )
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-            return jsonify({'error': 'Cannot update existing model. Use force_update:True'}), 400
-        return jsonify({'error': f"{e}"}), 500
+            if len(response['Items']) > 0:  # Check if the model already exists
+                return jsonify({'error': 'Cannot update existing model. Use force_update:True'}), 400
+
+        table.put_item(
+            Item={
+                'key': 'model'
+                , 'sort': train_request["id"]
+                , 'data': json.dumps(train_request)
+                , 'status': 'started'
+            }
+        )
     except Exception as e:
         return jsonify({'error': f"{e}"}), 500
 
     task = training_task.delay(train_request)
 
-    i = inspect()
-    print(i.scheduled())
-    print(i.active())
-    print(i.reserved())
+    return jsonify({'status': 'model training started', 'task_id': task.id}), 202
 
-    return jsonify({'task_id': task.id}), 202
-
+# Delete an existing model
 @app.route('/models/<string:model_id>', methods=['DELETE'])
 def delete_model(model_id):
     try:
@@ -118,6 +108,7 @@ def delete_model(model_id):
 
     return jsonify(response)
 
+# Get list of existing models
 @app.route('/models', methods=['GET'])
 def get_models():
     try:
@@ -132,6 +123,7 @@ def get_models():
         items[i]["data"] = json.loads(v["data"])
     return jsonify(items)
 
+# Classify an input text
 @app.route('/prediction', methods=['GET'])
 def get_prediction():
     if not (request.json
