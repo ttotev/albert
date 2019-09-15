@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from flask import Flask, jsonify, request
+from celery import Celery
+from celery.task.control import inspect
 import json
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -9,10 +11,23 @@ import training_routines
 import prediction_routines
 
 app = Flask(__name__)
+
+# Celery configuration
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+# Initialize Celery
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1'
             , endpoint_url="http://dynamodb.us-east-1.amazonaws.com")
 
 table = dynamodb.Table('albert_text_cat')
+
+@celery.task
+def training_task(train_request):
+    training_routines.train(app, table, train_request)
 
 @app.route('/models', methods=['POST'])
 def train_model():
@@ -43,6 +58,7 @@ def train_model():
                     'key': 'model'
                     , 'sort': train_request["id"]
                     , 'data': json.dumps(train_request)
+                    , 'status': 'started'
                 }
                 , ConditionExpression=Attr("key").not_exists() & Attr("sort").not_exists() 
             )
@@ -52,6 +68,7 @@ def train_model():
                     'key': 'model'
                     , 'sort': train_request["id"]
                     , 'data': json.dumps(train_request)
+                    , 'status': 'started'
                 }
                 , ReturnValues='ALL_OLD'
             )
@@ -62,9 +79,14 @@ def train_model():
     except Exception as e:
         return jsonify({'error': f"{e}"}), 500
 
-    training_routines.train(app, train_request)
+    task = training_task.delay(train_request)
 
-    return jsonify(response)
+    i = inspect()
+    print(i.scheduled())
+    print(i.active())
+    print(i.reserved())
+
+    return jsonify({'task_id': task.id}), 202
 
 @app.route('/models/<string:model_id>', methods=['DELETE'])
 def delete_model(model_id):
@@ -140,4 +162,4 @@ def get_prediction():
     return jsonify({'prediction_request': prediction_request, 'model': model, 'prediction': prediction})
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

@@ -1,19 +1,29 @@
 # Data Engineer Case Study at Albert
 
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install redis-server
+sudo service redis-server restart
+
+../.env/bin/celery worker -A text_cat_server.celery --loglevel=info
+
 ## Concepts
 
-The solution is based on RESTful services built in Flask/Python. AWS account is required for enabling required services.
+The solution is based on RESTful services built in Flask/Python. 
 SpaCy routines are not implemented. Instead mock functions are in place to simulate training and inference tasks.
-Datasets for training in JSON format are stored in AWS S3.
-Trained SpaCy text classification modules are stored in AWS S3.
+Datasets for training are stored in AWS S3 in JSON format.
+Trained spaCy text classification modules are stored in AWS S3 under separate prefexes.
 
 ## Infrastructure Components
 
-* AWS DynamoDB - stores references and links to trained models, S3 buckets names, training sets names, hyperparameters
+* AWS account is required for enabling required services
+* AWSCLI has to be installed and configured to access AWS account if running in development or text mode
+* EC2 Instance - runtime environment
+* AWS DynamoDB Table - stores references and links to trained models, S3 buckets names, training sets names, hyperparameters
 
 ## Tests
 
-Basic tests are included
+Basic tests are included in tests.py
 
 ## Examples:
 
