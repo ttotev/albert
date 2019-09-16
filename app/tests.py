@@ -6,10 +6,12 @@ class TestTextCatServer(unittest.TestCase):
         app.testing = True
         self.app = app.test_client()
 
+    # Test for completeness of parameters and required data
     def test_model_post_empty(self):
         rv = self.app.post('/models')
         self.assertIn(b'Required parameters not supplied', rv.data)
 
+    # Test for creation of new/forced update training metadata
     def test_model_post_update_with_force(self):
         rv = self.app.post('/models'
                 , json={"id":"tc-01"
@@ -21,14 +23,17 @@ class TestTextCatServer(unittest.TestCase):
         self.assertIn('status', json_data)
         self.assertIn('task_id', json_data)
 
+    # Test for data retrieval status codes
     def test_model_get_all(self):
         rv = self.app.get('/models')
         self.assertEqual(rv.status, '200 OK')
 
+    # Test for data retrieval
     def test_model_get_data(self):
         rv = self.app.get('/models')
         self.assertIn(b'data', rv.data)
 
+    # Test for data overwriting prevention
     def test_model_post_update_no_force(self):
         rv = self.app.post('/models'
                 , json={"id":"tc-01"

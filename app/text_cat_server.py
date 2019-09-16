@@ -27,6 +27,7 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-1'
 
 table = dynamodb.Table('albert_text_cat')
 
+# A long running task handled asynchronously
 @celery.task
 def training_task(train_request):
     training_routines.train(app, table, train_request)
@@ -55,7 +56,7 @@ def train_model():
     #     nlp = spacy.blank("en")  # create blank Language class
     
     try:
-        if force_update != 'True':  # Train only new models if not forced
+        if force_update != 'True':  # Train only new models if not explicitly forced
             response = table.query(
                 KeyConditionExpression=Key('key').eq('model') & Key('sort').eq(train_request['id'])
             )
@@ -73,7 +74,7 @@ def train_model():
     except Exception as e:
         return jsonify({'error': f"{e}"}), 500
 
-    task = training_task.delay(train_request)
+    task = training_task.delay(train_request) # Submit to Celery for queing
 
     return jsonify({'status': 'model training started', 'task_id': task.id}), 202
 
@@ -90,6 +91,7 @@ def delete_model(model_id):
     except Exception as e:
         return jsonify({'error': f"{e}"}), 500
 
+    # Check for existing model
     if 'Item' in response:
         item = response['Item']
     else:
@@ -120,12 +122,13 @@ def get_models():
 
     items = response['Items']
     for i, v in enumerate(items):
-        items[i]["data"] = json.loads(v["data"])
+        items[i]["data"] = json.loads(v["data"])  # Converting string to json
     return jsonify(items)
 
 # Classify an input text
 @app.route('/prediction', methods=['GET'])
 def get_prediction():
+    # Check for data imput correctness
     if not (request.json
             and all(par in request.json for par in ['model_id', 'text'])):
         return jsonify({'error': 'Required parameters not supplied'}), 400

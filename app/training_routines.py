@@ -30,6 +30,7 @@ def train(app, table, train_request):
     else:
         print('Test mode - fast run')
 
+    # Update model status to 'active' after training is done
     try:
         response = table.update_item(
             Key={
@@ -47,7 +48,6 @@ def train(app, table, train_request):
         )
     except Exception as e:
         return jsonify({'error': f"{e}"}), 500
-
 
 if __name__ == "__main__":
     train({})

@@ -1,39 +1,58 @@
 # Data Engineer Case Study at Albert
 
-Generic installation steps for Ubuntu 18.04
+## Concepts
 
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt install awscli
+The solution is based on RESTful services built in Flask/Python/Celery - [text_cat_server.py](./app/text_cat_server.py)
+
+SpaCy routines for NLP text classification are not implemented but provision.
+Mock functions - [training_routines.py](./app/training_routines.py) and [prediction_routines.py](./app/prediction_routines.py) are in place to simulate training and inference tasks.
+
+Datasets for training are stored in AWS S3 in JSON format.
+Trained spaCy text classification models are stored in AWS S3 under separate prefexes.
+
+## Infrastructure Components
+
+Building the underlying infrastructure and application components are handled with AWS Cloudformation template - [aws_cloudformation_template.yaml](aws_cloudformation_template.yaml). /The template is missing the 'UserData' at this moment/
+
+* AWS account is required for enabling required services
+* AWSCLI has to be installed and configured to access AWS account if running in development or text mode
+* EC2 Instance - runtime environment with the required Security Group and IAM Role
+* AWS DynamoDB Table - stores references and links to trained models, S3 buckets names, training sets names, hyperparameters
+
+## Generic installation steps for Ubuntu 18.04
+```
+sudo apt update
+sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
+sudo apt install awscli -y
 aws configure
-sudo apt install python3-pip
-sudo apt-get install redis-server
-In /etc/redis/redis.conf set - supervised systemd
+sudo apt install python3-pip -y
+sudo apt install redis-server -y
+# In /etc/redis/redis.conf set - supervised systemd
 sudo systemctl restart redis.service
-
-sudo apt install python3-venv
-
+sudo apt install python3-venv -y
 git clone https://github.com/ttotev/albert.git
 cd albert
-
 python3 -m venv .env
 source .env/bin/activate
-
 sudo .env/bin/pip install -r requirements.txt
-
 cd app
-
 ../.env/bin/celery worker -A text_cat_server.celery --loglevel=info
-
-In different terminal:
-
+# In different terminal:
 cd app
-
 python text_cat_server.py
+```
+## Provided API endpoints
 
-## Run the application with sample data
+* /models - GET - retrieve all clasification models
+* /models - POST - train a new model or update an existing one
+* /models/<model_id> - DELETE - remove a model and all related objects
+* /prediction - GET - classify a text based on trained model
 
-In different terminal:
+Details about the input parameters are given in the comments of the related functions
+
+## Run the application locally with sample data
+
+In a separate terminal:
 
 Assuming the API server is running on http://localhost:5000
 
@@ -62,20 +81,6 @@ curl -i -H "Content-Type: application/json" -X GET -d '{"model_id":"tc-01", "tex
 curl -i -H "Content-Type: application/json" -X GET -d '{"n_top": "1", "model_id":"tc-01", "text":"I want to save for vacation!"}' http://localhost:5000/prediction
 ```
 
-## Concepts
-
-The solution is based on RESTful services built in Flask/Python. 
-SpaCy routines are not implemented. Instead mock functions are in place to simulate training and inference tasks.
-Datasets for training are stored in AWS S3 in JSON format.
-Trained spaCy text classification modules are stored in AWS S3 under separate prefexes.
-
-## Infrastructure Components
-
-* AWS account is required for enabling required services
-* AWSCLI has to be installed and configured to access AWS account if running in development or text mode
-* EC2 Instance - runtime environment
-* AWS DynamoDB Table - stores references and links to trained models, S3 buckets names, training sets names, hyperparameters
-
 ## Tests
 
-Basic tests are included in tests.py
+Basic tests are included in [tests.py](./app/tests.py)
