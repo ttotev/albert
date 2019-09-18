@@ -16,7 +16,7 @@ Building the underlying infrastructure and application components are handled wi
 
 * AWS account is required for enabling required services
 * AWSCLI has to be installed and configured to access AWS account if running in development or text mode
-* EC2 Instance - runtime environment with the required Security Group and IAM Role
+* EC2 Instance (if run in AWS) - runtime environment with the required Security Group and IAM Role
 * AWS DynamoDB Table - stores references and links to trained models, S3 buckets names, training sets names, hyperparameters
 
 ## Generic installation steps for Ubuntu 18.04

@@ -42,6 +42,23 @@ Resources:
         - Ref: WebServerSecurityGroup
       KeyName:
         Ref: KeyName
+      UserData:
+        Fn::Base64: !Sub |
+          sudo apt update
+          sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
+          sudo apt install awscli -y
+          sudo apt install python3-pip -y
+          sudo apt install redis-server -y
+          sudo systemctl restart redis.service
+          sudo apt install python3-venv -y
+          git clone https://github.com/ttotev/albert.git
+          cd albert
+          python3 -m venv .env
+          source .env/bin/activate
+          sudo .env/bin/pip install -r requirements.txt
+          cd app
+          nohug ../.env/bin/celery worker -A text_cat_server.celery --loglevel=info > celery_log.out &
+          nohug python text_cat_server.py > server_log.out &
     Metadata:
       'AWS::CloudFormation::Designer':
         id: d342abd1-32ef-4d2c-8985-828c3537ec6f
