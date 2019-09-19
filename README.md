@@ -12,12 +12,47 @@ Trained spaCy text classification models are stored in AWS S3 under separate pre
 
 ## Infrastructure Components
 
-Building the underlying infrastructure and application components are handled with AWS Cloudformation template - [aws_cloudformation_template.yaml](aws_cloudformation_template.yaml). /The template is missing the 'UserData' at this moment/
+Two deployment options are provided - locally and AWS.
 
-* AWS account is required for enabling required services
-* AWSCLI has to be installed and configured to access AWS account if running in development or text mode
-* EC2 Instance (if run in AWS) - runtime environment with the required Security Group and IAM Role
+Both require the following setup:
+
+* AWS account for enabling required services
 * AWS DynamoDB Table - stores references and links to trained models, S3 buckets names, training sets names, hyperparameters
+
+### Running the sample application locally
+
+* Local Linux box with access to Internet
+* AWSCLI has to be installed and configured (`aws configure`) to access AWS account
+
+### Running the sample application in AWS
+
+'Key Pair' is required to be created. 
+Building the underlying infrastructure and application components are handled with AWS Cloudformation template - [aws_cloudformation_template.yaml](aws_cloudformation_template.yaml).
+
+Create Stack
+
+Upload a template file
+Choose file
+Next
+
+Stack name: 
+Parameters:
+KeyName:
+SSHLocation:
+
+Configure stack options
+Next
+
+Review
+Capabilities: Checkmark the 'I acknowledge that AWS CloudFormation might create IAM resources with custom names.'
+
+Click button 'Create stack'.
+
+The deployment and configuration will take about 
+
+https://console.aws.amazon.com/ec2/home?region=us-east-1#KeyPairs:sort=keyName
+
+* EC2 Instance - runtime environment with the required Security Group and IAM Role
 
 ## Generic installation steps for Ubuntu 18.04
 ```

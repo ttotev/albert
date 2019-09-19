@@ -44,6 +44,7 @@ Resources:
         Ref: KeyName
       UserData:
         Fn::Base64: !Sub |
+          #!/bin/bash -ex
           sudo apt update
           sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
           sudo apt install awscli -y
@@ -51,14 +52,17 @@ Resources:
           sudo apt install redis-server -y
           sudo systemctl restart redis.service
           sudo apt install python3-venv -y
+          cd /home
+          sudo mkdir alb
+          cd alb
           git clone https://github.com/ttotev/albert.git
           cd albert
-          python3 -m venv .env
+          sudo python3 -m venv .env
           source .env/bin/activate
           sudo .env/bin/pip install -r requirements.txt
           cd app
-          nohug ../.env/bin/celery worker -A text_cat_server.celery --loglevel=info > celery_log.out &
-          nohug python text_cat_server.py > server_log.out &
+          sudo nohup ../.env/bin/celery worker -A text_cat_server.celery --loglevel=info &
+          sudo nohup ../.env/bin/python3 text_cat_server.py &
     Metadata:
       'AWS::CloudFormation::Designer':
         id: d342abd1-32ef-4d2c-8985-828c3537ec6f
@@ -67,7 +71,7 @@ Resources:
   WebServerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties: 
-        GroupDescription: Enable HTTP access via port 80
+        GroupDescription: Enable HTTP access via port 5000
         SecurityGroupIngress:
           - IpProtocol: tcp
             FromPort: 5000
@@ -111,6 +115,19 @@ Resources:
       Roles:
         -
           Ref: "IAMRole"
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'Server'
+  AZ:
+    Description: Availability Zone of the newly created EC2 instance
+    Value: !GetAtt [Server, AvailabilityZone]
+  PublicDNS:
+    Description: Public DNSName of the newly created EC2 instance
+    Value: !GetAtt [Server, PublicDnsName]
+  PublicIP:
+    Description: Public IP address of the newly created EC2 instance
+    Value: !GetAtt [Server, PublicIp]
 Metadata:
   'AWS::CloudFormation::Designer':
     e888c8b1-7fe8-4b05-9835-f5b15d7db843:

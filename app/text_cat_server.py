@@ -157,4 +157,4 @@ def get_prediction():
     return jsonify({'prediction_request': prediction_request, 'model': model, 'prediction': prediction})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0')
